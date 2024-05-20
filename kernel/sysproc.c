@@ -10,8 +10,10 @@ uint64
 sys_exit(void)
 {
   int n;
+  char message[32];
   argint(0, &n);
-  exit(n);
+  argstr(1, message, 32);
+  exit(n, message);
   return 0;  // not reached
 }
 
