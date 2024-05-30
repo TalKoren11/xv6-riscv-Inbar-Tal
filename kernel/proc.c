@@ -53,6 +53,8 @@ procinit(void)
   initlock(&wait_lock, "wait_lock");
   for(p = proc; p < &proc[NPROC]; p++) {
       initlock(&p->lock, "proc");
+      p->affinity_mask = 0;
+      p->effective_affinity_mask = 0;
       p->state = UNUSED;
       p->kstack = KSTACK((int) (p - proc));
   }
@@ -124,6 +126,8 @@ allocproc(void)
 found:
   p->pid = allocpid();
   p->state = USED;
+  p->affinity_mask = 0;
+  p->effective_affinity_mask = 0;
 
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
@@ -169,6 +173,8 @@ freeproc(struct proc *p)
   p->killed = 0;
   p->xstate = 0;
   p->state = UNUSED;
+  p->affinity_mask = 0;
+  p->effective_affinity_mask = 0;
 }
 
 // Create a user page table for a given process, with no user memory,
@@ -299,6 +305,9 @@ fork(void)
   // copy saved user registers.
   *(np->trapframe) = *(p->trapframe);
 
+  np->affinity_mask = p->affinity_mask;
+  np->effective_affinity_mask = p->effective_affinity_mask;
+
   // Cause fork to return 0 in the child.
   np->trapframe->a0 = 0;
 
@@ -321,6 +330,7 @@ fork(void)
   acquire(&np->lock);
   np->state = RUNNABLE;
   release(&np->lock);
+
 
   return pid;
 }
@@ -347,11 +357,6 @@ void
 exit(int status, char* message)
 {
   struct proc *p = myproc();
-
-  if(memcmp(message, "0", 4) == 0)
-    strncpy(p->exit_msg, "No exit message", 15);
-  else
-    strncpy(p->exit_msg, message, strlen(message));
 
   if(p == initproc)
     panic("init exiting");
@@ -381,6 +386,7 @@ exit(int status, char* message)
   acquire(&p->lock);
 
   p->xstate = status;
+  strncpy(p->exit_msg, message, 32);
   p->state = ZOMBIE;
 
   release(&wait_lock);
@@ -419,6 +425,12 @@ wait(uint64 addr, uint64 message)
             release(&wait_lock);
             return -1;
           }
+          if(message != 0 && copyout(p->pagetable, message, (char *)&pp->exit_msg,
+                                  sizeof(pp->exit_msg)) < 0) {
+            release(&pp->lock);
+            release(&wait_lock);
+            return -1;
+          }
           freeproc(pp);
           release(&pp->lock);
           release(&wait_lock);
@@ -451,6 +463,8 @@ scheduler(void)
 {
   struct proc *p;
   struct cpu *c = mycpu();
+  int cpuId = cpuid();
+  int bitPos = 1 << cpuId;
   
   c->proc = 0;
   for(;;){
@@ -459,12 +473,18 @@ scheduler(void)
 
     for(p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
-      if(p->state == RUNNABLE) {
+      if(p->state == RUNNABLE && (p->effective_affinity_mask & bitPos)) { // mask - 101     effective mask - 100
+        printf("Process ID %d , CPU ID %d\n", p->pid, cpuId);
         // Switch to chosen process.  It is the process's job
         // to release its lock and then reacquire it
         // before jumping back to us.
         p->state = RUNNING;
         c->proc = p;
+        p->effective_affinity_mask &= ~(1 << cpuId);
+        if (p->effective_affinity_mask == 0) {
+        p->effective_affinity_mask = p->affinity_mask;
+        p->effective_affinity_mask &= ~(1 << cpuId);
+      }
         swtch(&c->context, &p->context);
 
         // Process is done running for now.
@@ -685,4 +705,12 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+void
+set_affinity_mask(int mask)
+{
+  struct proc *p = myproc();
+  p->affinity_mask = mask;
+  p->effective_affinity_mask = mask;
 }

@@ -21,3 +21,4 @@
 #define SYS_mkdir  20
 #define SYS_close  21
 #define SYS_memsize 22 //Task 2
+#define SYS_set_affinity_mask    23 //Task 5

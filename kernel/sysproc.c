@@ -12,7 +12,15 @@ sys_exit(void)
   int n;
   char message[32];
   argint(0, &n);
-  argstr(1, message, 32);
+  
+  uint64 addr;
+  argaddr(1, &addr);
+
+  if(addr == 0)
+    strncpy(message, "No exit message", 15);
+  else
+    argstr(1, message, 32);
+
   exit(n, message);
   return 0;  // not reached
 }
@@ -33,8 +41,10 @@ uint64
 sys_wait(void)
 {
   uint64 p;
+  uint64 pp;
   argaddr(0, &p);
-  return wait(p);
+  argaddr(1, &pp);
+  return wait(p, pp);
 }
 
 uint64
@@ -98,4 +108,13 @@ sys_memsize(void)
   struct proc *p = myproc();
 
   return p->sz;
+}
+
+uint64
+sys_set_affinity_mask(void)
+{
+  int mask;
+  argint(0, &mask);
+  set_affinity_mask(mask);
+  return 0;
 }

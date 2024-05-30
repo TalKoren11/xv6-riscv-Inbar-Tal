@@ -6,5 +6,5 @@ int
 main(int argc, char *argv[])
 {
   write(1, "Hello World xv6", 15);
-  exit(0);
+  exit(0, 0);
 }

@@ -105,4 +105,6 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
   char exit_msg[32];           // Exit message - Task 3
+  int affinity_mask;           // Affinity mask - Task 5
+  int effective_affinity_mask; // Effective affinity mask - Task 6
 };
