@@ -473,7 +473,7 @@ scheduler(void)
 
     for(p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
-      if(p->state == RUNNABLE && (p->effective_affinity_mask & bitPos)) { // mask - 101     effective mask - 100
+      if(p->state == RUNNABLE && ((p->effective_affinity_mask & bitPos) || (p->affinity_mask == 0))) { // mask - 101     effective mask - 100
         printf("Process ID %d , CPU ID %d\n", p->pid, cpuId);
         // Switch to chosen process.  It is the process's job
         // to release its lock and then reacquire it
@@ -482,9 +482,9 @@ scheduler(void)
         c->proc = p;
         p->effective_affinity_mask &= ~(1 << cpuId);
         if (p->effective_affinity_mask == 0) {
-        p->effective_affinity_mask = p->affinity_mask;
-        p->effective_affinity_mask &= ~(1 << cpuId);
-      }
+          p->effective_affinity_mask = p->affinity_mask;
+          p->effective_affinity_mask &= ~(1 << cpuId);
+        }
         swtch(&c->context, &p->context);
 
         // Process is done running for now.
