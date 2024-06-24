@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "channel.h" // Added - Task 1 - step 3
 
 struct cpu cpus[NCPU];
 
@@ -351,6 +352,9 @@ exit(int status)
   if(p == initproc)
     panic("init exiting");
 
+  // Close all channels - Task 1 - step 3.
+  channel_cleanup(p);
+
   // Close all open files.
   for(int fd = 0; fd < NOFILE; fd++){
     if(p->ofile[fd]){
@@ -595,6 +599,7 @@ kill(int pid)
         // Wake process from sleep().
         p->state = RUNNABLE;
       }
+      channel_cleanup(p); // Added - Task 1 - step 3
       release(&p->lock);
       return 0;
     }
