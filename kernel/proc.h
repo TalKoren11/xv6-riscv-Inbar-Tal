@@ -1,3 +1,5 @@
+#define NCHANNEL 16
+
 // Saved registers for kernel context switches.
 struct context {
   uint64 ra;
@@ -105,3 +107,18 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
 };
+
+// Channel structure
+struct channel {
+  struct spinlock lock; 
+  int valid;            
+  int data;             
+  int has_data;         
+  struct proc *owner;   
+};
+
+// Function prototypes
+int channel_create(void);
+int channel_put(int cd, int data);
+int channel_take(int cd, int *data);
+int channel_destroy(int cd);

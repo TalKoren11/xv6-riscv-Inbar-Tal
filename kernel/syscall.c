@@ -101,10 +101,10 @@ extern uint64 sys_unlink(void);
 extern uint64 sys_link(void);
 extern uint64 sys_mkdir(void);
 extern uint64 sys_close(void);
-extern int sys_channel_create(void);
-extern int sys_channel_put(void);
-extern int sys_channel_take(void);
-extern int sys_channel_destroy(void);
+extern uint64 sys_channel_create(void);
+extern uint64 sys_channel_put(void);
+extern uint64 sys_channel_take(void);
+extern uint64 sys_channel_destroy(void);
 
 
 // An array mapping syscall numbers from syscall.h

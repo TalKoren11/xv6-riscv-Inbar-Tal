@@ -5,7 +5,6 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
-#include "channel.h"
 
 uint64
 sys_exit(void)
@@ -91,12 +90,12 @@ sys_uptime(void)
   return xticks;
 }
 
-int
+uint64
 sys_channel_create(void) {
   return channel_create();
 }
 
-int
+uint64
 sys_channel_put(void) {
   int cd, data;
   argint(0, &cd);
@@ -104,7 +103,7 @@ sys_channel_put(void) {
   return channel_put(cd, data);
 }
 
-int
+uint64
 sys_channel_take(void) {
   int cd;
   uint64 data;
@@ -113,7 +112,7 @@ sys_channel_take(void) {
   return channel_take(cd, (int *)data);
 }
 
-int
+uint64
 sys_channel_destroy(void) {
   int cd;
   argint(0, &cd);
